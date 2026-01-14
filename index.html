@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MathMaster | Adaptive Learning System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header>
+            <div class="logo">MathMaster</div>
+            <div id="user-stats" class="hidden">
+                <span>Level: <b id="current-level">1</b></span>
+                <span>XP: <b id="total-xp">0</b></span>
+            </div>
+        </header>
+
+        <section id="view-home" class="view active">
+            <div class="hero">
+                <h1>Gamified Arithmetic Learning</h1>
+                <p>Master Addition, Subtraction, Multiplication, and Division.</p>
+                <button class="btn btn-primary" onclick="app.startGame()">Start Quiz</button>
+                <button class="btn btn-secondary" onclick="app.showProgress()">View Progress</button>
+            </div>
+        </section>
+
+        <section id="view-game" class="view hidden">
+            <div class="game-header">
+                <div class="timer-box">Time: <span id="timer">00:00</span></div>
+                <div class="score-box">Score: <span id="score">0</span></div>
+            </div>
+
+            <div class="question-area">
+                <div class="difficulty-tag" id="difficulty-indicator">Easy</div>
+                <h2 id="question-display">Loading...</h2>
+            </div>
+
+            <div class="options-grid" id="options-container">
+                </div>
+
+            <div id="feedback-message" class="feedback"></div>
+        </section>
+
+        <section id="view-result" class="view hidden">
+            <h2>Quiz Complete!</h2>
+            <div class="result-card">
+                <p>Your Score</p>
+                <h1 id="final-score">0</h1>
+                <p>Accuracy: <span id="accuracy">0%</span></p>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="app.startGame()">Play Again</button>
+                <button class="btn btn-secondary" onclick="app.returnHome()">Main Menu</button>
+            </div>
+        </section>
+
+        <section id="view-progress" class="view hidden">
+            <h2>Your Learning Journey</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Games</h3>
+                    <p id="stat-games">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>High Score</h3>
+                    <p id="stat-high">0</p>
+                </div>
+            </div>
+            <h3>Recent History</h3>
+            <ul id="history-list" class="history-list">
+                </ul>
+            <button class="btn btn-secondary" onclick="app.returnHome()">Back</button>
+        </section>
+
+    </div>
+
+    <script src="js/Question.js"></script>
+    <script src="js/Game.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
