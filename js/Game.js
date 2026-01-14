@@ -1,11 +1,11 @@
 /**
- * Game Class (Final Enhanced Version)
- * Manages game state, scoring, difficulty, streaks, and mistake tracking.
+ * Game Class (Skill Mastery Version)
+ * Now tracks accuracy per operator (+, -, *, /).
  */
 class Game {
     constructor() {
         this.score = 0;
-        this.timeLeft = 60; // 60 seconds per game
+        this.timeLeft = 60; 
         this.timerInterval = null;
         this.isActive = false;
         this.currentQuestion = null;
@@ -15,10 +15,18 @@ class Game {
         this.totalQuestions = 0;
         this.correctAnswers = 0;
         
-        // Gamification & Learning
-        this.streak = 0;      // Current winning streak
-        this.maxStreak = 0;   // Highest streak in this session
-        this.mistakes = [];   // Stores wrong answers for review
+        // Gamification
+        this.streak = 0;      
+        this.maxStreak = 0;   
+        this.mistakes = [];   
+        
+        // NEW: Skill Mastery Tracking
+        this.operatorStats = {
+            '+': { total: 0, correct: 0 },
+            '-': { total: 0, correct: 0 },
+            '*': { total: 0, correct: 0 },
+            '/': { total: 0, correct: 0 }
+        };
     }
 
     start() {
@@ -29,8 +37,16 @@ class Game {
         this.correctAnswers = 0;
         this.streak = 0;
         this.maxStreak = 0;
-        this.mistakes = []; // Reset mistakes
+        this.mistakes = []; 
         this.isActive = true;
+        
+        // Reset Stats
+        this.operatorStats = {
+            '+': { total: 0, correct: 0 },
+            '-': { total: 0, correct: 0 },
+            '*': { total: 0, correct: 0 },
+            '/': { total: 0, correct: 0 }
+        };
         
         this.startTimer();
         this.nextQuestion();
@@ -51,7 +67,7 @@ class Game {
     nextQuestion() {
         if (!this.isActive) return;
 
-        // Adaptive Difficulty: Level up every 50 points
+        // Adaptive Difficulty
         if (this.score > 100) this.difficulty = 3;
         else if (this.score > 50) this.difficulty = 2;
         else this.difficulty = 1;
@@ -63,27 +79,35 @@ class Game {
         if (!this.isActive) return false;
 
         this.totalQuestions++;
+        const currentOp = this.currentQuestion.operator; // Get current operator (+, -, etc.)
+        
+        // Track Total Attempts per Operator
+        if (this.operatorStats[currentOp]) {
+            this.operatorStats[currentOp].total++;
+        }
+
         const isCorrect = (userAnswer === this.currentQuestion.correctAnswer);
 
         if (isCorrect) {
-            // Streak Logic
+            // Track Correct Answers per Operator
+            if (this.operatorStats[currentOp]) {
+                this.operatorStats[currentOp].correct++;
+            }
+
+            // Gamification Logic
             this.streak++;
             if (this.streak > this.maxStreak) this.maxStreak = this.streak;
-
-            // Score Calculation: Base 10 + Streak Bonus
             this.score += 10 + (this.streak * 2);
-            
             this.correctAnswers++;
-            this.timeLeft += 2; // Time bonus
+            this.timeLeft += 2; 
         } else {
-            // Record Mistake for Review
+            // Record Mistake
             this.mistakes.push({
                 question: this.currentQuestion.getDisplay().replace(' = ?', ''),
                 userAnswer: userAnswer,
                 correctAnswer: this.currentQuestion.correctAnswer
             });
 
-            // Penalties
             this.streak = 0;
             this.timeLeft -= 5;
         }

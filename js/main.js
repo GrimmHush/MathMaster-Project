@@ -1,6 +1,6 @@
 /**
- * Main Controller (Bug Fix: Input Locking)
- * Includes: Game Loop, Sound Toggle, Achievements, Keyboard, and Input Locking.
+ * Main Controller (Skill Mastery Update)
+ * Includes: Game Loop, Sound, Achievements, Input Lock, and Skill Analytics.
  */
 
 const app = {
@@ -8,9 +8,8 @@ const app = {
     myChart: null,
     uiTimer: null,
     soundEnabled: true,
-    isProcessing: false, // NEW: Lock flag to prevent double-clicking
+    isProcessing: false, 
 
-    // --- Definition of Achievements ---
     achievementsDef: [
         { id: 'first_win', icon: '🌱', title: 'Beginner', desc: 'Complete 1 Game' },
         { id: 'score_200', icon: '🔥', title: 'On Fire', desc: 'Score 200+ pts' },
@@ -19,7 +18,6 @@ const app = {
         { id: 'veteran',   icon: '👑', title: 'Math King', desc: 'Total 1000 XP' }
     ],
 
-    // --- Navigation ---
     showView: (viewId) => {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         setTimeout(() => {
@@ -42,11 +40,11 @@ const app = {
         if (!app.soundEnabled) return;
         const file = type === 'correct' ? 'assets/correct.mp3' : 'assets/wrong.mp3';
         const audio = new Audio(file);
-        audio.play().catch(e => {}); // Silent fail
+        audio.play().catch(e => {}); 
     },
 
     startGame: () => {
-        app.isProcessing = false; // Reset lock
+        app.isProcessing = false; 
         app.game.start();
         app.updateTimerDisplay(); 
         app.updateScoreDisplay();
@@ -57,7 +55,6 @@ const app = {
         app.showView('view-game');
         app.renderQuestion();
         
-        // Start Timer
         if (app.uiTimer) clearInterval(app.uiTimer);
         app.uiTimer = setInterval(() => {
             app.updateTimerDisplay();
@@ -67,18 +64,15 @@ const app = {
 
     finishGame: () => {
         clearInterval(app.uiTimer);
-        app.isProcessing = false; // Ensure lock is released
+        app.isProcessing = false; 
         
-        // Stats
         document.getElementById('final-score').textContent = app.game.score;
         document.getElementById('accuracy').textContent = app.game.getAccuracy() + "%";
         
-        // Confetti
         if (app.game.score > 0) {
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6c5ce7', '#00cec9', '#e17055'] });
         }
 
-        // Mistakes
         const mistakesBox = document.getElementById('mistakes-container');
         const mistakesList = document.getElementById('mistakes-list');
         if (app.game.mistakes.length > 0) {
@@ -103,7 +97,6 @@ const app = {
         app.loadStats(); 
     },
 
-    // --- Gameplay ---
     renderQuestion: () => {
         const q = app.game.currentQuestion;
         
@@ -125,19 +118,15 @@ const app = {
             const btn = document.createElement('button');
             btn.className = 'option-btn';
             btn.innerHTML = `<span class="key-hint">${index + 1}</span> ${opt}`;
-            
-            // Pass the specific button element to handleAnswer
             btn.onclick = () => app.handleAnswer(opt, btn);
-            
             container.appendChild(btn);
         });
     },
 
     handleAnswer: (selectedOption, btnElement) => {
-        // FIX: Check if game is processing to prevent double clicks
         if (!app.game.isActive || app.isProcessing) return;
         
-        app.isProcessing = true; // LOCK INPUT
+        app.isProcessing = true; 
 
         const isCorrect = app.game.submitAnswer(selectedOption);
         app.playSound(isCorrect ? 'correct' : 'wrong');
@@ -156,14 +145,13 @@ const app = {
         app.updateScoreDisplay();
         app.updateTimerDisplay(); 
 
-        // Delay for feedback
         setTimeout(() => {
             fbMessage.textContent = "";
             if (app.game.isActive) {
                 app.game.nextQuestion();
                 app.renderQuestion();
             }
-            app.isProcessing = false; // UNLOCK INPUT
+            app.isProcessing = false; 
         }, 800);
     },
 
@@ -181,12 +169,13 @@ const app = {
         document.getElementById('score').textContent = app.game.score;
     },
 
-    // --- Persistence & Achievements ---
+    // --- Persistence & Analytics ---
     saveProgress: () => {
         const result = {
             date: new Date().toLocaleDateString(),
             score: app.game.score,
-            accuracy: app.game.getAccuracy()
+            accuracy: app.game.getAccuracy(),
+            skills: app.game.operatorStats // NEW: Save skill data
         };
         const history = JSON.parse(localStorage.getItem('mathMasterHistory')) || [];
         history.unshift(result); 
@@ -218,9 +207,61 @@ const app = {
 
     showProgress: () => {
         app.loadHistoryUI();
-        app.renderAchievementsUI(); 
+        app.renderAchievementsUI();
+        app.renderSkillsUI(); // NEW: Render Skill Breakdown
         app.showView('view-progress');
         if (typeof Chart !== 'undefined') app.renderChart();
+    },
+
+    // --- NEW: Skill Mastery Renderer ---
+    renderSkillsUI: () => {
+        const list = document.getElementById('skills-list');
+        const history = JSON.parse(localStorage.getItem('mathMasterHistory')) || [];
+        
+        // Aggregate stats from all games
+        let stats = {
+            '+': { total: 0, correct: 0, label: 'Addition', color: '#ff7675' },
+            '-': { total: 0, correct: 0, label: 'Subtraction', color: '#74b9ff' },
+            '*': { total: 0, correct: 0, label: 'Multiplication', color: '#a29bfe' },
+            '/': { total: 0, correct: 0, label: 'Division', color: '#00cec9' }
+        };
+
+        history.forEach(game => {
+            if (game.skills) {
+                for (let op in game.skills) {
+                    if(stats[op]) {
+                        stats[op].total += game.skills[op].total;
+                        stats[op].correct += game.skills[op].correct;
+                    }
+                }
+            }
+        });
+
+        list.innerHTML = '';
+        
+        Object.keys(stats).forEach(op => {
+            const data = stats[op];
+            let percent = 0;
+            if (data.total > 0) percent = Math.round((data.correct / data.total) * 100);
+            
+            // Only show if attempted at least once
+            if (data.total > 0 || op === '+') { 
+                const item = document.createElement('div');
+                item.className = 'skill-item';
+                item.innerHTML = `
+                    <div class="skill-info">
+                        <span>${data.label}</span>
+                        <span>${percent}%</span>
+                    </div>
+                    <div class="skill-bar-bg">
+                        <div class="skill-bar-fill" style="width: ${percent}%; background: ${data.color}"></div>
+                    </div>
+                `;
+                list.appendChild(item);
+            }
+        });
+        
+        if (list.innerHTML === '') list.innerHTML = '<p style="text-align:center; font-size:0.9rem; color:#b2bec3">Play a game to see your skills!</p>';
     },
 
     renderAchievementsUI: () => {
@@ -297,22 +338,15 @@ const app = {
     }
 };
 
-// --- KEYBOARD SUPPORT ---
 window.addEventListener('keydown', (e) => {
-    // Only work if in game view
     if (!document.getElementById('view-game').classList.contains('active')) return;
-    
-    // Check if locked
     if (app.isProcessing) return; 
-
     const key = e.key;
     const buttons = document.querySelectorAll('.option-btn');
-    
     if (['1', '2', '3', '4'].includes(key)) {
         const index = parseInt(key) - 1;
         if (buttons[index]) {
             buttons[index].click(); 
-            // Visual press effect
             buttons[index].style.transform = "scale(0.95)";
             setTimeout(() => buttons[index].style.transform = "scale(1)", 100);
         }
