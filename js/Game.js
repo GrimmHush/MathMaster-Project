@@ -1,6 +1,6 @@
 /**
- * Game Class (Enhanced)
- * Manages game state, scoring, adaptive difficulty, and now STREAKS.
+ * Game Class (Final Enhanced Version)
+ * Manages game state, scoring, difficulty, streaks, and mistake tracking.
  */
 class Game {
     constructor() {
@@ -15,9 +15,10 @@ class Game {
         this.totalQuestions = 0;
         this.correctAnswers = 0;
         
-        // --- NEW: Gamification Features ---
+        // Gamification & Learning
         this.streak = 0;      // Current winning streak
         this.maxStreak = 0;   // Highest streak in this session
+        this.mistakes = [];   // Stores wrong answers for review
     }
 
     start() {
@@ -28,6 +29,7 @@ class Game {
         this.correctAnswers = 0;
         this.streak = 0;
         this.maxStreak = 0;
+        this.mistakes = []; // Reset mistakes
         this.isActive = true;
         
         this.startTimer();
@@ -64,20 +66,26 @@ class Game {
         const isCorrect = (userAnswer === this.currentQuestion.correctAnswer);
 
         if (isCorrect) {
-            // --- NEW: Streak Logic ---
+            // Streak Logic
             this.streak++;
             if (this.streak > this.maxStreak) this.maxStreak = this.streak;
 
-            // Score Calculation: Base 10 + (Streak Bonus * 2)
-            // Example: Streak 3 gives 10 + 6 = 16 points
+            // Score Calculation: Base 10 + Streak Bonus
             this.score += 10 + (this.streak * 2);
             
             this.correctAnswers++;
             this.timeLeft += 2; // Time bonus
         } else {
-            // Reset streak on wrong answer
+            // Record Mistake for Review
+            this.mistakes.push({
+                question: this.currentQuestion.getDisplay().replace(' = ?', ''),
+                userAnswer: userAnswer,
+                correctAnswer: this.currentQuestion.correctAnswer
+            });
+
+            // Penalties
             this.streak = 0;
-            this.timeLeft -= 5; // Time penalty
+            this.timeLeft -= 5;
         }
 
         return isCorrect;
@@ -85,7 +93,7 @@ class Game {
 
     endGame() {
         this.isActive = false;
-        clearInterval(this.timerInterval);
+        if (this.timerInterval) clearInterval(this.timerInterval);
     }
 
     getAccuracy() {

@@ -3,82 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MathMaster | Adaptive Learning System</title>
+    <title>MathMaster | Gamified Learning</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
 
     <div class="app-container">
         
         <header>
-            <div class="logo">MathMaster</div>
-            <div id="user-stats" class="hidden">
-                <span>Level: <b id="current-level">1</b></span>
-                <span>XP: <b id="total-xp">0</b></span>
+            <div class="logo"><i class="fas fa-cube"></i> MathMaster</div>
+            <div style="display: flex; align-items: center;">
+                <div id="user-stats">
+                    <span><i class="fas fa-star" style="color:#f1c40f"></i> XP: <b id="total-xp">0</b></span>
+                </div>
+                <button id="sound-toggle" class="sound-btn" onclick="app.toggleSound()">
+                    <i class="fas fa-volume-up"></i>
+                </button>
             </div>
         </header>
 
         <section id="view-home" class="view active">
-            <div class="hero">
-                <h1>Gamified Arithmetic Learning</h1>
-                <p>Master Addition, Subtraction, Multiplication, and Division.</p>
-                <button class="btn btn-primary" onclick="app.startGame()">Start Quiz</button>
-                <button class="btn btn-secondary" onclick="app.showProgress()">View Progress</button>
+            <div class="hero" style="text-align: center; margin-top: 30px;">
+                <img src="assets/favicon.ico" alt="" style="width: 70px; margin-bottom: 15px; opacity: 0.9;">
+                <h1 style="margin-bottom: 10px; font-size: 1.8rem;">Ready to learn?</h1>
+                <p style="margin-bottom: 30px; color: #636e72;">Master arithmetic through adaptive play.</p>
+                
+                <button class="btn btn-primary" onclick="app.startGame()">
+                    <i class="fas fa-play"></i> Start Quiz
+                </button>
+                <button class="btn btn-secondary" onclick="app.showProgress()">
+                    <i class="fas fa-trophy"></i> Progress & Awards
+                </button>
             </div>
         </section>
 
         <section id="view-game" class="view hidden">
             <div class="game-header">
-                <div class="timer-box">Time: <span id="timer">00:00</span></div>
+                <div class="timer-box"><i class="far fa-clock"></i> <span id="timer">00:00</span></div>
+                <div id="streak-display" class="hidden" style="color: #e67e22;"></div>
                 <div class="score-box">Score: <span id="score">0</span></div>
-                <div id="streak-display" class="hidden" style="color: #e67e22; font-weight: bold; padding: 0 15px;"></div>
             </div>
 
             <div class="question-area">
-                <div class="difficulty-tag" id="difficulty-indicator">Easy</div>
-                <h2 id="question-display">Loading...</h2>
+                <div class="difficulty-tag" id="difficulty-indicator">Level 1</div>
+                <h2 id="question-display">...</h2>
             </div>
 
             <div class="options-grid" id="options-container">
                 </div>
 
-            <div id="feedback-message" class="feedback"></div>
+            <div id="feedback-message" class="feedback" style="height: 30px; margin-top: 20px; font-weight: bold; text-align: center;"></div>
         </section>
 
         <section id="view-result" class="view hidden">
             <h2>Quiz Complete!</h2>
             <div class="result-card">
-                <p>Your Score</p>
+                <p>Total Score</p>
                 <h1 id="final-score">0</h1>
-                <p>Accuracy: <span id="accuracy">0%</span></p>
+                <p style="color: #636e72;">Accuracy: <strong id="accuracy">0%</strong></p>
             </div>
-            <div class="action-buttons">
-                <button class="btn btn-primary" onclick="app.startGame()">Play Again</button>
-                <button class="btn btn-secondary" onclick="app.returnHome()">Main Menu</button>
+
+            <div id="mistakes-container" class="hidden" style="width: 100%; margin-bottom: 20px;">
+                <div style="background: #fff5f5; border-radius: 12px; padding: 15px; text-align: left; border: 1px solid #ffecec;">
+                    <h4 style="color: #d63031; margin-bottom: 10px;"><i class="fas fa-exclamation-circle"></i> Needs Practice</h4>
+                    <ul id="mistakes-list" style="list-style: none; padding: 0; max-height: 100px; overflow-y: auto;"></ul>
+                </div>
+            </div>
+
+            <div class="action-buttons" style="width: 100%;">
+                <button class="btn btn-primary" onclick="app.startGame()">
+                    <i class="fas fa-redo"></i> Play Again
+                </button>
+                <button class="btn btn-secondary" onclick="app.returnHome()">
+                    <i class="fas fa-home"></i> Main Menu
+                </button>
             </div>
         </section>
 
         <section id="view-progress" class="view hidden">
-            <h2>Your Learning Journey</h2>
-            <div class="chart-box" 
-                style="position: relative; height: 300px; width: 100%; margin-bottom: 20px;">
+            <h2 style="margin-bottom: 15px;">Your Profile</h2>
+            
+            <h4 style="align-self: flex-start; margin-bottom: 10px; color: #636e72;">Trophies</h4>
+            <div class="achievements-grid" id="achievements-list">
+                </div>
+
+            <div class="chart-box" style="position: relative; height: 180px; width: 100%; margin-bottom: 20px; background: white; padding: 10px; border-radius: 16px;">
                 <canvas id="progressChart"></canvas>
             </div>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h3>Total Games</h3>
-                    <p id="stat-games">0</p>
-                </div>
-                <div class="stat-card">
-                    <h3>High Score</h3>
-                    <p id="stat-high">0</p>
-                </div>
-            </div>
-            <h3>Recent History</h3>
-            <ul id="history-list" class="history-list">
-                </ul>
-            <button class="btn btn-secondary" onclick="app.returnHome()">Back</button>
+            
+            <ul id="history-list" class="history-list"></ul>
+            
+            <button class="btn btn-secondary" onclick="app.returnHome()" style="margin-top: 15px;">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
         </section>
 
     </div>
