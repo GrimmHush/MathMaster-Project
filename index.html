@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MathMaster | Adaptive Learning System</title>
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -31,6 +32,7 @@
             <div class="game-header">
                 <div class="timer-box">Time: <span id="timer">00:00</span></div>
                 <div class="score-box">Score: <span id="score">0</span></div>
+                <div id="streak-display" class="hidden" style="color: #e67e22; font-weight: bold; padding: 0 15px;"></div>
             </div>
 
             <div class="question-area">
@@ -59,6 +61,10 @@
 
         <section id="view-progress" class="view hidden">
             <h2>Your Learning Journey</h2>
+            <div class="chart-box" 
+                style="position: relative; height: 300px; width: 100%; margin-bottom: 20px;">
+                <canvas id="progressChart"></canvas>
+            </div>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>Total Games</h3>
