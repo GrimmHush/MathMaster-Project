@@ -1,6 +1,6 @@
 /**
- * Main Controller (Skill Mastery Update)
- * Includes: Game Loop, Sound, Achievements, Input Lock, and Skill Analytics.
+ * Main Controller
+ * Orchestrates the application. Handles UI updates, Audio, Storage, and Inputs.
  */
 
 const app = {
@@ -8,8 +8,9 @@ const app = {
     myChart: null,
     uiTimer: null,
     soundEnabled: true,
-    isProcessing: false, 
+    isProcessing: false, // Critical: Prevents double-click bugs
 
+    // Achievement Definitions
     achievementsDef: [
         { id: 'first_win', icon: '🌱', title: 'Beginner', desc: 'Complete 1 Game' },
         { id: 'score_200', icon: '🔥', title: 'On Fire', desc: 'Score 200+ pts' },
@@ -18,13 +19,14 @@ const app = {
         { id: 'veteran',   icon: '👑', title: 'Math King', desc: 'Total 1000 XP' }
     ],
 
+    // --- NAVIGATION ---
     showView: (viewId) => {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
         setTimeout(() => {
             document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
             const target = document.getElementById(viewId);
             target.classList.remove('hidden');
-            void target.offsetWidth; 
+            void target.offsetWidth; // Trigger reflow for animation
             target.classList.add('active');
         }, 100);
     },
@@ -40,13 +42,14 @@ const app = {
         if (!app.soundEnabled) return;
         const file = type === 'correct' ? 'assets/correct.mp3' : 'assets/wrong.mp3';
         const audio = new Audio(file);
-        audio.play().catch(e => {}); 
+        audio.play().catch(e => console.warn("Audio blocked:", e));
     },
 
+    // --- GAME LOOP ---
     startGame: () => {
-        app.isProcessing = false; 
+        app.isProcessing = false;
         app.game.start();
-        app.updateTimerDisplay(); 
+        app.updateTimerDisplay();
         app.updateScoreDisplay();
         
         document.getElementById('feedback-message').textContent = "";
@@ -64,15 +67,18 @@ const app = {
 
     finishGame: () => {
         clearInterval(app.uiTimer);
-        app.isProcessing = false; 
+        app.isProcessing = false;
         
+        // 1. Update Result Stats
         document.getElementById('final-score').textContent = app.game.score;
         document.getElementById('accuracy').textContent = app.game.getAccuracy() + "%";
         
+        // 2. Trigger Celebration
         if (app.game.score > 0) {
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#6c5ce7', '#00cec9', '#e17055'] });
         }
 
+        // 3. Render Mistakes
         const mistakesBox = document.getElementById('mistakes-container');
         const mistakesList = document.getElementById('mistakes-list');
         if (app.game.mistakes.length > 0) {
@@ -80,7 +86,12 @@ const app = {
             mistakesList.innerHTML = ''; 
             app.game.mistakes.forEach(m => {
                 const li = document.createElement('li');
-                li.innerHTML = `<div style="margin-bottom:5px; border-bottom:1px solid #eee;"><b>${m.question} = ?</b> <br> You: <span style="color:#d63031">${m.userAnswer}</span> | Ans: <span style="color:#00b894">${m.correctAnswer}</span></div>`;
+                li.innerHTML = `
+                    <div><b>${m.question} = ?</b></div>
+                    <div style="font-size:0.9em">
+                        You: <span style="color:#d63031">${m.userAnswer}</span> | 
+                        Ans: <span style="color:#00b894">${m.correctAnswer}</span>
+                    </div>`;
                 mistakesList.appendChild(li);
             });
         } else {
@@ -88,7 +99,7 @@ const app = {
         }
 
         app.saveProgress();
-        app.checkAchievements(); 
+        app.checkAchievements();
         app.showView('view-result');
     },
 
@@ -97,12 +108,13 @@ const app = {
         app.loadStats(); 
     },
 
+    // --- RENDERERS ---
     renderQuestion: () => {
         const q = app.game.currentQuestion;
-        
         document.getElementById('question-display').textContent = q.getDisplay();
         document.getElementById('difficulty-indicator').textContent = `Level ${app.game.difficulty}`;
         
+        // Streak UI
         const streakEl = document.getElementById('streak-display');
         if (app.game.streak > 1) {
             streakEl.innerHTML = `<i class="fas fa-fire"></i> Streak: ${app.game.streak}`;
@@ -111,6 +123,7 @@ const app = {
             streakEl.classList.add('hidden');
         }
 
+        // Generate Buttons
         const container = document.getElementById('options-container');
         container.innerHTML = ''; 
         
@@ -124,13 +137,14 @@ const app = {
     },
 
     handleAnswer: (selectedOption, btnElement) => {
+        // INPUT LOCK: Prevent race conditions
         if (!app.game.isActive || app.isProcessing) return;
-        
         app.isProcessing = true; 
 
         const isCorrect = app.game.submitAnswer(selectedOption);
         app.playSound(isCorrect ? 'correct' : 'wrong');
 
+        // Visual Feedback
         const fbMessage = document.getElementById('feedback-message');
         if (isCorrect) {
             if(btnElement) btnElement.classList.add('correct');
@@ -145,13 +159,14 @@ const app = {
         app.updateScoreDisplay();
         app.updateTimerDisplay(); 
 
+        // Delay for next question
         setTimeout(() => {
             fbMessage.textContent = "";
             if (app.game.isActive) {
                 app.game.nextQuestion();
                 app.renderQuestion();
             }
-            app.isProcessing = false; 
+            app.isProcessing = false; // RELEASE LOCK
         }, 800);
     },
 
@@ -160,6 +175,7 @@ const app = {
         const minutes = Math.floor(app.game.timeLeft / 60);
         const seconds = app.game.timeLeft % 60;
         timerEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
         const box = document.querySelector('.timer-box');
         if (app.game.timeLeft <= 10) box.classList.add('urgent');
         else box.classList.remove('urgent');
@@ -169,17 +185,17 @@ const app = {
         document.getElementById('score').textContent = app.game.score;
     },
 
-    // --- Persistence & Analytics ---
+    // --- DATA & ANALYTICS ---
     saveProgress: () => {
         const result = {
             date: new Date().toLocaleDateString(),
             score: app.game.score,
             accuracy: app.game.getAccuracy(),
-            skills: app.game.operatorStats // NEW: Save skill data
+            skills: app.game.operatorStats 
         };
         const history = JSON.parse(localStorage.getItem('mathMasterHistory')) || [];
         history.unshift(result); 
-        if (history.length > 20) history.pop();
+        if (history.length > 20) history.pop(); // Keep last 20
         localStorage.setItem('mathMasterHistory', JSON.stringify(history));
     },
 
@@ -187,38 +203,33 @@ const app = {
         let unlocked = JSON.parse(localStorage.getItem('mathMasterBadges')) || [];
         const history = JSON.parse(localStorage.getItem('mathMasterHistory')) || [];
         const totalXP = history.reduce((sum, item) => sum + item.score, 0);
-        const currentScore = app.game.score;
-        const currentStreak = app.game.maxStreak;
-        const accuracy = app.game.getAccuracy();
-
+        
+        // Achievement Logic
         if (history.length >= 1) addBadge('first_win');
-        if (currentScore >= 200) addBadge('score_200');
-        if (currentStreak >= 10)  addBadge('streak_10');
-        if (accuracy === 100 && app.game.totalQuestions >= 5) addBadge('perfect');
-        if (totalXP >= 1000)      addBadge('veteran');
+        if (app.game.score >= 200) addBadge('score_200');
+        if (app.game.maxStreak >= 10) addBadge('streak_10');
+        if (app.game.getAccuracy() === 100 && app.game.totalQuestions >= 5) addBadge('perfect');
+        if (totalXP >= 1000) addBadge('veteran');
 
         function addBadge(id) {
-            if (!unlocked.includes(id)) {
-                unlocked.push(id);
-            }
+            if (!unlocked.includes(id)) unlocked.push(id);
         }
         localStorage.setItem('mathMasterBadges', JSON.stringify(unlocked));
     },
 
+    // --- UI POPULATORS ---
     showProgress: () => {
         app.loadHistoryUI();
         app.renderAchievementsUI();
-        app.renderSkillsUI(); // NEW: Render Skill Breakdown
+        app.renderSkillsUI();
         app.showView('view-progress');
         if (typeof Chart !== 'undefined') app.renderChart();
     },
 
-    // --- NEW: Skill Mastery Renderer ---
     renderSkillsUI: () => {
         const list = document.getElementById('skills-list');
         const history = JSON.parse(localStorage.getItem('mathMasterHistory')) || [];
         
-        // Aggregate stats from all games
         let stats = {
             '+': { total: 0, correct: 0, label: 'Addition', color: '#ff7675' },
             '-': { total: 0, correct: 0, label: 'Subtraction', color: '#74b9ff' },
@@ -238,30 +249,22 @@ const app = {
         });
 
         list.innerHTML = '';
+        let hasData = false;
         
         Object.keys(stats).forEach(op => {
             const data = stats[op];
-            let percent = 0;
-            if (data.total > 0) percent = Math.round((data.correct / data.total) * 100);
-            
-            // Only show if attempted at least once
-            if (data.total > 0 || op === '+') { 
-                const item = document.createElement('div');
-                item.className = 'skill-item';
-                item.innerHTML = `
-                    <div class="skill-info">
-                        <span>${data.label}</span>
-                        <span>${percent}%</span>
-                    </div>
-                    <div class="skill-bar-bg">
-                        <div class="skill-bar-fill" style="width: ${percent}%; background: ${data.color}"></div>
-                    </div>
-                `;
-                list.appendChild(item);
+            if (data.total > 0) {
+                hasData = true;
+                const percent = Math.round((data.correct / data.total) * 100);
+                list.innerHTML += `
+                    <div class="skill-item">
+                        <div class="skill-info"><span>${data.label}</span><span>${percent}%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width:${percent}%; background:${data.color}"></div></div>
+                    </div>`;
             }
         });
         
-        if (list.innerHTML === '') list.innerHTML = '<p style="text-align:center; font-size:0.9rem; color:#b2bec3">Play a game to see your skills!</p>';
+        if (!hasData) list.innerHTML = '<p style="text-align:center; color:#b2bec3; font-size:0.9rem;">Play a game to unlock skills analysis!</p>';
     },
 
     renderAchievementsUI: () => {
@@ -271,14 +274,12 @@ const app = {
 
         app.achievementsDef.forEach(ach => {
             const isUnlocked = unlocked.includes(ach.id);
-            const div = document.createElement('div');
-            div.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
-            div.innerHTML = `
-                <span class="achievement-icon">${ach.icon}</span>
-                <span>${ach.title}</span>
-                <span style="font-weight:400; color:#b2bec3; font-size:0.6rem">${ach.desc}</span>
-            `;
-            list.appendChild(div);
+            list.innerHTML += `
+                <div class="achievement-card ${isUnlocked ? 'unlocked' : ''}">
+                    <span class="achievement-icon">${ach.icon}</span>
+                    <span>${ach.title}</span>
+                    <span style="display:block; font-size:0.6rem; color:#b2bec3; margin-top:2px;">${ach.desc}</span>
+                </div>`;
         });
     },
 
@@ -293,11 +294,13 @@ const app = {
         list.innerHTML = '';
         const history = JSON.parse(localStorage.getItem('mathMasterHistory')) || [];
         if (history.length === 0) list.innerHTML = '<li class="history-item">No games yet.</li>';
+        
         history.forEach(item => {
-            const li = document.createElement('li');
-            li.className = 'history-item';
-            li.innerHTML = `<span>${item.date}</span> <b>${item.score} pts</b>`;
-            list.appendChild(li);
+            list.innerHTML += `
+                <li class="history-item">
+                    <span><i class="far fa-calendar-alt"></i> ${item.date}</span> 
+                    <b>${item.score} pts</b>
+                </li>`;
         });
     },
 
@@ -308,6 +311,7 @@ const app = {
         const chartData = history.slice(0, 10).reverse(); 
 
         if (app.myChart) app.myChart.destroy();
+        
         const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
         gradient.addColorStop(0, 'rgba(108, 92, 231, 0.5)');
         gradient.addColorStop(1, 'rgba(108, 92, 231, 0.0)');
@@ -338,21 +342,21 @@ const app = {
     }
 };
 
+// Keyboard Listeners
 window.addEventListener('keydown', (e) => {
     if (!document.getElementById('view-game').classList.contains('active')) return;
     if (app.isProcessing) return; 
-    const key = e.key;
-    const buttons = document.querySelectorAll('.option-btn');
-    if (['1', '2', '3', '4'].includes(key)) {
-        const index = parseInt(key) - 1;
+    
+    if (['1', '2', '3', '4'].includes(e.key)) {
+        const index = parseInt(e.key) - 1;
+        const buttons = document.querySelectorAll('.option-btn');
         if (buttons[index]) {
-            buttons[index].click(); 
+            buttons[index].click();
             buttons[index].style.transform = "scale(0.95)";
             setTimeout(() => buttons[index].style.transform = "scale(1)", 100);
         }
     }
 });
 
-window.onload = () => {
-    app.loadStats();
-};
+// Init
+window.onload = () => app.loadStats();
