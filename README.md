@@ -44,13 +44,13 @@ Follow these steps to set up the project locally on your machine.
 
 ### 1. Clone the repository
 ```bash
-git clone [https://github.com/yourusername/MathMaster-Project.git](https://github.com/yourusername/MathMaster.git)
-cd MathMaster
+git clone https://github.com/GrimmHush/MathMaster-Project.git
+cd MathMaster-Project
+```
 
 ### 2. Environment Variables
-Create a .env file in the root directory and add your local configuration. (Do not commit this file!)
-Code snippet
-
+Create a `.env` file in the root directory and add your local configuration. *(Do not commit this file!)*
+```env
 # Database Configuration
 DB_USER=postgres
 DB_PASSWORD=your_password
@@ -61,34 +61,40 @@ DB_NAME=mathmaster_db
 # Security
 JWT_SECRET=your_super_secret_key_here
 PORT=4000
+```
 
 ### 3. Database Setup
 Ensure PostgreSQL is running, then execute the schema file to create the necessary tables:
+```bash
 psql -U postgres -d mathmaster_db -f server/db/schema.sql
+```
 
 ### 4. Install Dependencies
 Install packages for both the client and the server:
 ```bash
-
 npm install
 cd server && npm install
 cd ..
+```
 
 ### 5. Run the Development Servers
-
 Start the backend API and the Next.js frontend concurrently:
 ```bash
-
 # Terminal 1: Start Backend
 cd server
 npm run dev
 
 # Terminal 2: Start Frontend
 npm run dev
+```
 
-The application will be available at http://localhost:3000.
+The application will be available at `http://localhost:3000`.
 
-# 📂 Project Structure
+---
+
+## 📂 Project Structure
+
+```text
 MathMaster/
 ├── app/                  # Next.js App Router (Pages & Layouts)
 ├── components/           # Reusable React UI components (Auth, Dashboard, Game)
@@ -100,3 +106,10 @@ MathMaster/
 │   └── utils/            # JWT and security helpers
 ├── store/                # Zustand global state slices
 └── tailwind.config.ts    # Custom theme and styling configurations
+```
+
+---
+
+## 👨‍💻 Author
+
+**Seifeldin Ali** *BSc. Business Information Technology (BBIT)* *Strathmore University*
